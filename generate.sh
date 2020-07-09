@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Maintained by SPO <spo@redhat.com>
+
+echo -e "\033[1;36mCreating Installer Files\033[0m"
+mkdir -p $(pwd)/installer/images
+
+# Download latest base RHCOS image to be uploaded to your cloud IaaS tenant
+echo -e "\033[1;33mDownloading RHCOS Image\033[0m"
+wget http://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest -r -l1 -nd -A '*.vmdk.gz' -e robots=off --show-progress --quiet -P ./installer
+#wget http://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest/rhcos-$OCP_VERSION-x86_64-aws.x86_64.vmdk.gz --show-progress --quiet -P ./installer
+echo -e "\033[1;33mExtracting RHCOS Image\033[0m"
+gunzip ./installer/rhcos*
+
+# Mirror official release images to local images dir
+echo -e "\033[1;33mDownloading Openshift Images\033[0m"
+oc adm -a $PULL_SECRET release mirror --from=quay.io/openshift-release-dev/ocp-release:$OCP_VERSION-x86_64 --to="file://openshift/release" --to-dir="./installer/images"
+
+sleep 5 # Weird network timeout race conditions if you don't set this
+# Extract the appropriate pinned installer executable from the upstream image mirror
+echo -e "\033[1;33mDownloading Openshift Installer Executable\033[0m"
+oc adm -a $PULL_SECRET release extract --command=openshift-install --from=quay.io/openshift-release-dev/ocp-release:$OCP_VERSION-x86_64 --to="./installer/"
+
+echo -e "\033[0;33mConstructing ISO Artifacts\033[0m"
+genisoimage -J -joliet-long -quiet -r -o openshift-offline-installer.iso ./installer
+split -b 4000M --numeric-suffixes=1 --additional-suffix=.iso openshift-offline-installer.iso openshift-installer-disk
+rm openshift-offline-installer.iso
+rm -rf ./installer
