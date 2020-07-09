@@ -1,4 +1,4 @@
-# spo-si-ocp4-installer
+# Offline Openshift 4 Installer
 Installer tools for preparing a Private/Private or Offline installation of OCP4
 
 # Guide
