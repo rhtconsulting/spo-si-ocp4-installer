@@ -21,6 +21,9 @@ sleep 5 # Weird network timeout race conditions if you don't set this
 echo -e "\033[1;33mDownloading Openshift Installer Executable\033[0m"
 oc adm -a $PULL_SECRET release extract --command=openshift-install --from=quay.io/openshift-release-dev/ocp-release:$OCP_VERSION-x86_64 --to="./installer/"
 
+cp -r ./templates ./installer/
+cp *.sh ./installer
+
 echo -e "\033[0;33mConstructing ISO Artifacts\033[0m"
 genisoimage -J -joliet-long -quiet -r -o openshift-offline-installer.iso ./installer
 split -b 4000M --numeric-suffixes=1 --additional-suffix=.iso openshift-offline-installer.iso openshift-installer-disk
